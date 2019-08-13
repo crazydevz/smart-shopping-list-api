@@ -1,0 +1,24 @@
+{
+  "name": "realtime-shopping-list",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "test": "export NODE_ENV=test || SET \"NODE_ENV=test\" && mocha --timeout 5000 server/**/*.test.js",
+    "test-watch": "nodemon --exec \"npm run test\""
+  },
+  "engines": {
+    "node": "11.1.0"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "lodash": "^4.17.15",
+    "mongodb": "^3.3.0-beta2",
+    "mongoose": "^5.6.9",
+    "validator": "^11.0.0"
+  }
+}
