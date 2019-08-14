@@ -69,10 +69,11 @@ app.patch('/shoppingLists/:id', (req, res) => {
     })();
 });
 
-app.patch('/shoppingLists/listItem/:id', (req, res) => {
-    var id = req.params.id;
+app.patch('/shoppingLists/:listId/:itemId', (req, res) => {
+    var listId = req.params.listId;
+    var itemId = req.params.itemId;
 
-    if(!ObjectID.isValid(id)) {
+    if(!ObjectID.isValid(listId) && !ObjectID.isValid(itemId)) {
         return res.status(404).send();
     }
 
@@ -80,7 +81,7 @@ app.patch('/shoppingLists/listItem/:id', (req, res) => {
 
     (async function() {
         try{
-            var updatedList = await ShoppingList.findOneAndUpdate({"list._id": id}, {$set: {"list.$": body}}, {new: true});
+            var updatedList = await ShoppingList.findOneAndUpdate({_id: listId, "list._id": itemId}, {$set: {"list.$": body}}, {new: true});
             if(!updatedList) return res.status(400).send();
             res.send({updatedList});
         } catch(e) {
@@ -89,7 +90,42 @@ app.patch('/shoppingLists/listItem/:id', (req, res) => {
     })();
 });
 
+app.delete('/shoppingLists/:id', (req, res) => {
+    var id = req.params.id;
 
+    if(!ObjectID.isValid(id)) {
+        return res.status(404).send();
+    }
+
+    (async function() {
+        try{
+            var deletedList = await ShoppingList.findByIdAndDelete(id);
+            if(!deletedList) return res.status(400).send();
+            return res.send({deletedList});
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
+app.delete('/shoppingLists/:listId/:itemId', (req, res) => {
+    var listId = req.params.listId;
+    var itemId = req.params.itemId;
+
+    if(!ObjectID.isValid(listId) && !ObjectID.isValid(itemId)) {
+        return res.status(404).send();
+    }
+
+    (async function() {
+        try{
+            var deletedList = await ShoppingList.findOneAndUpdate({_id: listId}, {$pull: {"list": {_id: itemId}}}, {new: true});
+            if(!deletedList) return res.status(400).send();
+            return res.send({deletedList});
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
 
 app.listen(port, () => {
     console.log(`Up on port ${port}`);

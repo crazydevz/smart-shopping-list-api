@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const validator = require('validator');
 
 var ShoppingListSchema = mongoose.Schema({
     list_name: {
@@ -33,7 +32,11 @@ var ShoppingListSchema = mongoose.Schema({
             type: Number,
             default: 0
         }
-    }]
+    }],
+    // _creator: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     required: true
+    // }
 });
 
 var ShoppingList = mongoose.model('ShoppingList', ShoppingListSchema);
