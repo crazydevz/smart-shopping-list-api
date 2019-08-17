@@ -12,8 +12,10 @@ app.use(bodyParser.json());
 const port = process.env.PORT;
 
 var {ShoppingList} = require('./models/shoppingList');
+var {User} = require('./models/user');
+var {authenticate} = require('./middleware/authenticate');
 
-app.post('/shoppingLists', (req, res) => {
+app.post('/shoppingLists', authenticate,  (req, res) => {
     var shoppingList = new ShoppingList({
         list_name: req.body.list_name
     });
@@ -29,7 +31,7 @@ app.post('/shoppingLists', (req, res) => {
     })();
 });
 
-app.post('/shoppingLists/:id', (req, res) => {
+app.post('/shoppingLists/:id', authenticate, (req, res) => {
     var id = req.params.id;
 
     if(!ObjectID.isValid(id)) {
@@ -49,7 +51,7 @@ app.post('/shoppingLists/:id', (req, res) => {
     })();
 });
 
-app.patch('/shoppingLists/:id', (req, res) => {
+app.patch('/shoppingLists/:id', authenticate, (req, res) => {
     var id = req.params.id;
 
     if(!ObjectID.isValid(id)) {
@@ -69,7 +71,7 @@ app.patch('/shoppingLists/:id', (req, res) => {
     })();
 });
 
-app.patch('/shoppingLists/:listId/:itemId', (req, res) => {
+app.patch('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
     var listId = req.params.listId;
     var itemId = req.params.itemId;
 
@@ -90,7 +92,7 @@ app.patch('/shoppingLists/:listId/:itemId', (req, res) => {
     })();
 });
 
-app.delete('/shoppingLists/:id', (req, res) => {
+app.delete('/shoppingLists/:id', authenticate, (req, res) => {
     var id = req.params.id;
 
     if(!ObjectID.isValid(id)) {
@@ -101,14 +103,14 @@ app.delete('/shoppingLists/:id', (req, res) => {
         try{
             var deletedList = await ShoppingList.findByIdAndDelete(id);
             if(!deletedList) return res.status(400).send();
-            return res.send({deletedList});
+            res.send({deletedList});
         } catch(e) {
             res.status(400).send(e);
         }
     })();
 });
 
-app.delete('/shoppingLists/:listId/:itemId', (req, res) => {
+app.delete('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
     var listId = req.params.listId;
     var itemId = req.params.itemId;
 
@@ -118,11 +120,56 @@ app.delete('/shoppingLists/:listId/:itemId', (req, res) => {
 
     (async function() {
         try{
-            var deletedList = await ShoppingList.findOneAndUpdate({_id: listId}, {$pull: {"list": {_id: itemId}}}, {new: true});
-            if(!deletedList) return res.status(400).send();
-            return res.send({deletedList});
+            var updatedList = await ShoppingList.findOneAndUpdate({_id: listId, "list._id": itemId}, {$pull: {list: {_id: itemId}}}, {new: true});
+            if(!updatedList) return res.status(400).send();
+            res.send({updatedList});
         } catch(e) {
             res.status(400).send(e);
+        }
+    })();
+});
+
+app.post('/users', (req, res) => {
+    const body = _.pick(req.body, ['email', 'password']);
+
+    var user = new User(body);
+
+    (async function() {
+        try{
+            var token = await user.generateAuthToken();
+            res.header('x-auth', token).send(user);
+        } catch(e) {
+            res.status(400).send();
+        }
+    })();
+});
+
+app.post('/users/login', (req, res) => {
+    const body = _.pick(req.body, ['email', 'password']);
+
+    (async function() {
+        try {
+            var user = await User.findByCredentials(body.email, body.password);
+            var token = await user.generateAuthToken();
+
+            res.header('x-auth', token).send(user);
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
+app.get('/users/me', authenticate, (req, res) => {
+    res.send(req.user);
+});
+
+app.delete('/users/me/token', authenticate, (req, res) => {
+    (async function() {
+        try {
+            await req.user.removeToken(req.token);
+            res.send();
+        } catch(e) {
+            res.status(400).send();
         }
     })();
 });
