@@ -17,7 +17,8 @@ var {authenticate} = require('./middleware/authenticate');
 
 app.post('/shoppingLists', authenticate,  (req, res) => {
     var shoppingList = new ShoppingList({
-        list_name: req.body.list_name
+        list_name: req.body.list_name,
+        _creator: req.user._id
     });
 
     (async function() {
@@ -42,8 +43,8 @@ app.post('/shoppingLists/:id', authenticate, (req, res) => {
 
     (async function() {
         try{
-            var updatedList = await ShoppingList.findOneAndUpdate({_id: id},{$push: {"list": body}},{new: true});
-            if(!updatedList) return res.status(404).send();
+            var updatedList = await ShoppingList.findOneAndUpdate({_id: id, _creator: req.user._id},{$push: {"list": body}},{new: true});
+            if(!updatedList) return res.status(400).send();
             res.send({updatedList});
         } catch(e) {
             res.status(400).send(e);
@@ -62,7 +63,7 @@ app.patch('/shoppingLists/:id', authenticate, (req, res) => {
 
     (async function() {
         try{
-            var updatedList = await ShoppingList.findOneAndUpdate({_id: id}, {$set: body}, {new: true});
+            var updatedList = await ShoppingList.findOneAndUpdate({_id: id, _creator: req.user._id}, {$set: body}, {new: true});
             if(!updatedList) return res.status(400).send();
             res.send({updatedList});
         } catch(e) {
@@ -83,9 +84,46 @@ app.patch('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
 
     (async function() {
         try{
-            var updatedList = await ShoppingList.findOneAndUpdate({_id: listId, "list._id": itemId}, {$set: {"list.$": body}}, {new: true});
+            var updatedList = await ShoppingList.findOneAndUpdate({_id: listId, "list._id": itemId, _creator: req.user._id}, {$set: {"list.$": body}}, {new: true});
             if(!updatedList) return res.status(400).send();
             res.send({updatedList});
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
+app.get('/shoppingLists', authenticate, (req, res) => {
+    (async function() {
+        try{
+            var foundLists = await ShoppingList.find({_creator: req.user._id});
+            if(!foundLists) return res.status(400).send();
+            res.send({foundLists});
+        } catch(e){
+            res.status(400).send(e);
+        }
+    })();
+});
+
+app.get('/shoppingLists/accepted', authenticate, (req, res) => {
+    (async function() {
+        try {
+            var foundLists = await ShoppingList.find({sharee_email: req.user.email});
+            if(!foundLists) return res.status(400).send();
+            res.send({foundLists});
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
+// TESTED: false
+app.get('/shoppingLists/shared', authenticate, (req, res) => {
+    (async function() {
+        try {
+            var foundLists = await ShoppingList.find({_creator: req.user._id, sharee_email: (!null)});
+            if(!foundLists) return res.status(400).send();
+            res.send({foundLists});
         } catch(e) {
             res.status(400).send(e);
         }
@@ -101,7 +139,7 @@ app.delete('/shoppingLists/:id', authenticate, (req, res) => {
 
     (async function() {
         try{
-            var deletedList = await ShoppingList.findByIdAndDelete(id);
+            var deletedList = await ShoppingList.findOneAndDelete({_id: id, _creator: req.user._id});
             if(!deletedList) return res.status(400).send();
             res.send({deletedList});
         } catch(e) {
@@ -120,7 +158,7 @@ app.delete('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
 
     (async function() {
         try{
-            var updatedList = await ShoppingList.findOneAndUpdate({_id: listId, "list._id": itemId}, {$pull: {list: {_id: itemId}}}, {new: true});
+            var updatedList = await ShoppingList.findOneAndUpdate({_id: listId, "list._id": itemId, _creator: req.user._id}, {$pull: {list: {_id: itemId}}}, {new: true});
             if(!updatedList) return res.status(400).send();
             res.send({updatedList});
         } catch(e) {

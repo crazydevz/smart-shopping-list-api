@@ -33,10 +33,10 @@ var ShoppingListSchema = mongoose.Schema({
             default: 0
         }
     }],
-    // _creator: {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     required: true
-    // }
+    _creator: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true
+    }
 });
 
 var ShoppingList = mongoose.model('ShoppingList', ShoppingListSchema);
