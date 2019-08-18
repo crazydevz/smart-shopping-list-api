@@ -117,11 +117,10 @@ app.get('/shoppingLists/accepted', authenticate, (req, res) => {
     })();
 });
 
-// TESTED: false
 app.get('/shoppingLists/shared', authenticate, (req, res) => {
     (async function() {
         try {
-            var foundLists = await ShoppingList.find({_creator: req.user._id, sharee_email: (!null)});
+            var foundLists = await ShoppingList.find({_creator: req.user._id, sharee_email: {$ne: null}});
             if(!foundLists) return res.status(400).send();
             res.send({foundLists});
         } catch(e) {
