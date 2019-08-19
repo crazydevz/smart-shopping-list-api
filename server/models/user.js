@@ -55,7 +55,7 @@ UserSchema.methods.generateAuthToken = function() {
     });
 
     return new Promise(async function(resolve, reject) {
-        try{
+        try {
             await user.save();
             resolve(token);
         } catch(e) {
@@ -78,7 +78,7 @@ UserSchema.statics.findByToken = function(token) {
     User = this;
 
     return new Promise(async function(resolve, reject) {
-        try{
+        try {
             var decoded = jwt.verify(token, process.env.JWT_SECRET);
     
             var user = await User.findOne({

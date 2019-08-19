@@ -36,6 +36,10 @@ var ShoppingListSchema = mongoose.Schema({
     _creator: {
         type: mongoose.Schema.Types.ObjectId,
         required: true
+    },
+    shared: {
+        type: Boolean,
+        default: false
     }
 });
 
