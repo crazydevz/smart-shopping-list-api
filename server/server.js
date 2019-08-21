@@ -18,6 +18,7 @@ var {authenticate} = require('./middleware/authenticate');
 app.post('/shoppingLists', authenticate,  (req, res) => {
     var shoppingList = new ShoppingList({
         list_name: req.body.list_name,
+        creator_username: req.user.username,
         _creator: req.user._id
     });
 
@@ -32,20 +33,89 @@ app.post('/shoppingLists', authenticate,  (req, res) => {
     })();
 });
 
-app.post('/shoppingLists/:id', authenticate, (req, res) => {
-    var id = req.params.id;
+app.post('/shoppingLists/:listId', authenticate, (req, res) => {
+    var listId = req.params.listId;
 
-    if(!ObjectID.isValid(id)) {
+    if(!ObjectID.isValid(listId)) {
         return res.status(404).send();
     }
 
+    var conditions = {_id: listId, _creator: req.user._id};
     var body = _.pick(req.body, ['item_name', 'price_per_item', 'quantity_requested']);
+    var update = {$push: {"list_items": body}};
+    var options = {new: true};
 
     (async function() {
         try {
-            var updatedList = await ShoppingList.findOneAndUpdate({_id: id, _creator: req.user._id},{$push: {"list": body}},{new: true});
+            var updatedList = await ShoppingList.findOneAndUpdate(conditions, update, options);
             if(!updatedList) return res.status(400).send();
             res.send({updatedList});
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
+app.patch('/shoppingLists/shareList/:listId', authenticate, (req, res) => {
+    var listId = req.params.listId;
+
+    if(!ObjectID.isValid(listId)) {
+        return res.status(404).send();
+    }
+
+    (async function() {
+        try {
+            var listExists = await User.findOne({email: req.body.sharee_email});
+            if(!listExists) return res.status(400).send();
+
+            var conditions = {_id: listId, _creator: req.user._id, sharee_email: null, shared: false};
+            var update = {$set: {sharee_email: req.body.sharee_email}};
+
+            var list = await ShoppingList.findOneAndUpdate(conditions, update);
+            if(!list) return res.status(400).send();
+            res.send();
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
+app.patch('/shoppingLists/unshareList/:listId', authenticate, (req, res) => {
+    var listId = req.params.listId;
+
+    if(!ObjectID.isValid(listId)) {
+        return res.status(404).send();
+    }
+
+    var conditions = {_id: listId, _creator: req.user._id, sharee_email: {$ne: null}, shared: true};
+    var update = {$set: {sharee_email: null, shared: false}};
+
+    (async function() {
+        try {
+            var list = await ShoppingList.findOneAndUpdate(conditions, update);
+            if(!list) return res.status(400).send();
+            res.send();
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
+app.patch('/shoppingLists/received/unshareList/:listId', authenticate, (req, res) => {
+    var listId = req.params.listId;
+
+    if(!ObjectID.isValid(listId)) {
+        return res.status(404).send();
+    }
+
+    var conditions = {_id: listId, sharee_email: req.user.email, shared: true};
+    var update = {$set: {sharee_email: null, shared: false}};
+
+    (async function() {
+        try {
+            var list = await ShoppingList.findOneAndUpdate(conditions, update);
+            if(!list) return res.status(400).send();
+            res.send();
         } catch(e) {
             res.status(400).send(e);
         }
@@ -59,10 +129,13 @@ app.patch('/shoppingLists/acceptList/:listId', authenticate, (req, res) => {
         return res.status(404).send();
     }
 
+    var conditions = {_id: listId, sharee_email: req.user.email, shared: false};
+    var update = {$set: {shared: true}};
+
     (async function() {
         try {
-            var acceptedList = await ShoppingList.findOneAndUpdate({_id: listId, sharee_email: req.user.email}, {$set: {shared: true}});
-            if(!acceptedList) return res.status(400).send();
+            var list = await ShoppingList.findOneAndUpdate(conditions, update);
+            if(!list) return res.status(400).send();
             res.send();
         } catch(e) {
             res.status(400).send(e);
@@ -70,18 +143,42 @@ app.patch('/shoppingLists/acceptList/:listId', authenticate, (req, res) => {
     })();
 });
 
-app.patch('/shoppingLists/:id', authenticate, (req, res) => {
-    var id = req.params.id;
+app.patch('/shoppingLists/rejectList/:listId', authenticate, (req, res) => {
+    var listId = req.params.listId;
 
-    if(!ObjectID.isValid(id)) {
+    if(!ObjectID.isValid(listId)) {
         return res.status(404).send();
     }
 
-    var body = {list_name: req.body.list_name};
+    var conditions = {_id: listId, sharee_email: req.user.email, shared: false};
+    var update = {$set: {sharee_email: null}};
 
     (async function() {
         try {
-            var updatedList = await ShoppingList.findOneAndUpdate({_id: id, _creator: req.user._id}, {$set: body}, {new: true});
+            var list = await ShoppingList.findOneAndUpdate(conditions, update);
+            if(!list) return res.status(400).send();
+            res.send();
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
+app.patch('/shoppingLists/:listId', authenticate, (req, res) => {
+    var listId = req.params.listId;
+
+    if(!ObjectID.isValid(listId)) {
+        return res.status(404).send();
+    }
+
+    var conditions = {_id: listId, _creator: req.user._id, shared: false};
+    var body = {list_name: req.body.list_name};
+    var update = {$set: body};
+    var options = {new: true};
+
+    (async function() {
+        try {
+            var updatedList = await ShoppingList.findOneAndUpdate(conditions, update, options);
             if(!updatedList) return res.status(400).send();
             res.send({updatedList});
         } catch(e) {
@@ -98,11 +195,38 @@ app.patch('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
         return res.status(404).send();
     }
 
-    var body = _.pick(req.body, ['item_name', 'price_per_item', 'quantity_requested', 'quantity_available']);
+    var conditions = {_id: listId, "list_items._id": itemId, _creator: req.user._id, shared: false};
+    var body = _.pick(req.body, ['item_name', 'price_per_item', 'quantity_requested']);
+    var update = {$set: {"list_items.$.item_name": body.item_name, "list_items.$.price_per_item": body.price_per_item, "list_items.$.quantity_requested": body.quantity_requested}};
+    var options = {new: true};
 
     (async function() {
         try {
-            var updatedList = await ShoppingList.findOneAndUpdate({_id: listId, "list._id": itemId, _creator: req.user._id}, {$set: {"list.$": body}}, {new: true});
+            var updatedList = await ShoppingList.findOneAndUpdate(conditions, update, options);
+            if(!updatedList) return res.status(400).send();
+            res.send({updatedList});
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
+app.patch('/shoppingLists/received/:listId/:itemId', authenticate, (req, res) => {
+    var listId = req.params.listId;
+    var itemId = req.params.itemId;
+
+    if(!ObjectID.isValid(listId) && !ObjectID.isValid(itemId)) {
+        return res.status(404).send();
+    }
+
+    var conditions = {_id: listId, "list_items._id": itemId, sharee_email: req.user.email, shared: true};
+    var body = _.pick(req.body, ['price_per_item', 'quantity_available']);
+    var update = {$set: {"list_items.$.price_per_item": body.price_per_item, "list_items.$.quantity_available": body.quantity_available}};
+    var options = {new: true};
+
+    (async function() {
+        try {
+            var updatedList = await ShoppingList.findOneAndUpdate(conditions, update, options);
             if(!updatedList) return res.status(400).send();
             res.send({updatedList});
         } catch(e) {
@@ -112,9 +236,11 @@ app.patch('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
 });
 
 app.get('/shoppingLists', authenticate, (req, res) => {
+    var conditions = {_creator: req.user._id};
+
     (async function() {
         try {
-            var myLists = await ShoppingList.find({_creator: req.user._id});
+            var myLists = await ShoppingList.find(conditions);
             if(!myLists) return res.status(400).send();
             res.send({myLists});
         } catch(e) {
@@ -124,9 +250,11 @@ app.get('/shoppingLists', authenticate, (req, res) => {
 });
 
 app.get('/shoppingLists/received', authenticate, (req, res) => {
+    var conditions = {sharee_email: req.user.email, shared: true};
+
     (async function() {
         try {
-            var receivedLists = await ShoppingList.find({sharee_email: req.user.email, shared: true});
+            var receivedLists = await ShoppingList.find(conditions);
             if(!receivedLists) return res.status(400).send();
             res.send({receivedLists});
         } catch(e) {
@@ -136,9 +264,11 @@ app.get('/shoppingLists/received', authenticate, (req, res) => {
 });
 
 app.get('/shoppingLists/shared', authenticate, (req, res) => {
+    var conditions = {_creator: req.user._id, sharee_email: {$ne: null}, shared: true};
+
     (async function() {
         try {
-            var sharedLists = await ShoppingList.find({_creator: req.user._id, sharee_email: {$ne: null}, shared: true});
+            var sharedLists = await ShoppingList.find(conditions);
             if(!sharedLists) return res.status(400).send();
             res.send({sharedLists});
         } catch(e) {
@@ -147,16 +277,18 @@ app.get('/shoppingLists/shared', authenticate, (req, res) => {
     })();
 });
 
-app.delete('/shoppingLists/:id', authenticate, (req, res) => {
-    var id = req.params.id;
+app.delete('/shoppingLists/:listId', authenticate, (req, res) => {
+    var listId = req.params.listId;
 
-    if(!ObjectID.isValid(id)) {
+    if(!ObjectID.isValid(listId)) {
         return res.status(404).send();
     }
 
+    var conditions = {_id: listId, _creator: req.user._id, shared: false};
+
     (async function() {
         try {
-            var deletedList = await ShoppingList.findOneAndDelete({_id: id, _creator: req.user._id});
+            var deletedList = await ShoppingList.findOneAndDelete(conditions);
             if(!deletedList) return res.status(400).send();
             res.send({deletedList});
         } catch(e) {
@@ -173,9 +305,13 @@ app.delete('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
         return res.status(404).send();
     }
 
+    var conditions = {_id: listId, "list_items._id": itemId, _creator: req.user._id, shared: false};
+    var update = {$pull: {list_items: {_id: itemId}}};
+    var options = {new: true};
+
     (async function() {
         try {
-            var updatedList = await ShoppingList.findOneAndUpdate({_id: listId, "list._id": itemId, _creator: req.user._id}, {$pull: {list: {_id: itemId}}}, {new: true});
+            var updatedList = await ShoppingList.findOneAndUpdate(conditions, update, options);
             if(!updatedList) return res.status(400).send();
             res.send({updatedList});
         } catch(e) {
@@ -185,7 +321,7 @@ app.delete('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
 });
 
 app.post('/users', (req, res) => {
-    const body = _.pick(req.body, ['email', 'password']);
+    const body = _.pick(req.body, ['email', 'username', 'password']);
 
     var user = new User(body);
 
@@ -200,11 +336,11 @@ app.post('/users', (req, res) => {
 });
 
 app.post('/users/login', (req, res) => {
-    const body = _.pick(req.body, ['email', 'password']);
+    const body = _.pick(req.body, ['emailOrUsername', 'password']);
 
     (async function() {
         try {
-            var user = await User.findByCredentials(body.email, body.password);
+            var user = await User.findByCredentials(body.emailOrUsername, body.password);
             var token = await user.generateAuthToken();
 
             res.header('x-auth', token).send(user);
