@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const _ = require('lodash');
 
 var ShoppingListSchema = mongoose.Schema({
     list_name: {
@@ -7,13 +8,7 @@ var ShoppingListSchema = mongoose.Schema({
         minlength: 1,
         trim: true
     },
-    sharee_email: {
-        default: null,
-        type: String,
-        minlength: 1,
-        trim: true
-    },
-    list: [{
+    list_items: [{
         item_name: {
             type: String,
             required: true,
@@ -33,15 +28,33 @@ var ShoppingListSchema = mongoose.Schema({
             default: 0
         }
     }],
+    shared: {
+        type: Boolean,
+        default: false
+    },
     _creator: {
         type: mongoose.Schema.Types.ObjectId,
         required: true
     },
-    shared: {
-        type: Boolean,
-        default: false
+    creator_username:  {
+        type: String,
+        default: null,
+        trim: true
+    },
+    sharee_email: {
+        default: null,
+        type: String,
+        minlength: 1,
+        trim: true
     }
 });
+
+ShoppingListSchema.methods.toJSON = function(){
+    var shoppingList = this;
+    var shoppingListObject = shoppingList.toObject();
+
+    return _.pick(shoppingListObject, ['_id', 'list_name', 'list_items', 'creator_username']);
+}
 
 var ShoppingList = mongoose.model('ShoppingList', ShoppingListSchema);
 

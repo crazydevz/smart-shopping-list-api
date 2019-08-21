@@ -5,6 +5,13 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
 var UserSchema = mongoose.Schema({
+    username: {
+        type: String,
+        required: true,
+        minlength: 3,
+        trim: true,
+        unique: true
+    },
     email: {
         type: String,
         required: true,
@@ -40,7 +47,7 @@ UserSchema.methods.toJSON = function() {
     var user = this;
     var userObject = user.toObject();
 
-    return _.pick(userObject, ['_id', 'email']);
+    return _.pick(userObject, ['_id', 'email, username']);
 }
 
 UserSchema.methods.generateAuthToken = function() {
@@ -94,12 +101,12 @@ UserSchema.statics.findByToken = function(token) {
     });
 }
 
-UserSchema.statics.findByCredentials = function(email, password) {
+UserSchema.statics.findByCredentials = function(emailOrUsername, password) {
     User = this;
 
     return new Promise(async function(resolve, reject) {
         try {
-            var user = await User.findOne({email});
+            var user = await User.findOne({$or: [{email: emailOrUsername}, {username: emailOrUsername}]});
             if(!user) {
                 reject();
             }
