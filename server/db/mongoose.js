@@ -8,6 +8,4 @@ mongoose.set('useCreateIndex', true);
 
 mongoose.connect(process.env.MONGODB_URI);
 
-module.exports = {
-    mongoose
-}
+module.exports = {mongoose}
