@@ -15,6 +15,7 @@ var {ShoppingList} = require('./models/shoppingList');
 var {User} = require('./models/user');
 var {authenticate} = require('./middleware/authenticate');
 
+
 app.post('/shoppingLists', authenticate,  (req, res) => {
     var shoppingList = new ShoppingList({
         list_name: req.body.list_name,
