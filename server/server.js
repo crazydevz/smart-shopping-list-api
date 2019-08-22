@@ -249,6 +249,20 @@ app.get('/shoppingLists', authenticate, (req, res) => {
     })();
 });
 
+app.get('/shoppingLists/requests', authenticate, (req, res) => {
+    var conditions = {sharee_email: req.user.email, shared: false};
+
+    (async function() {
+        try{ 
+            var unacceptedLists = await ShoppingList.find(conditions, '-list_items');
+            if(!unacceptedLists) res.status(400).send();
+            res.send({unacceptedLists});
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
 app.get('/shoppingLists/received', authenticate, (req, res) => {
     var conditions = {sharee_email: req.user.email, shared: true};
 
