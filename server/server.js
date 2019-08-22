@@ -25,7 +25,7 @@ app.post('/shoppingLists', authenticate,  (req, res) => {
 
     (async function() {
         try {
-            var savedList = await shoppingList.save();
+            var savedList = await shoppingList.save();  // Problem here
             if(!savedList) return res.status(400).send();
             res.send({savedList});
         } catch(e) {
@@ -48,7 +48,7 @@ app.post('/shoppingLists/:listId', authenticate, (req, res) => {
 
     (async function() {
         try {
-            var updatedList = await ShoppingList.findOneAndUpdate(conditions, update, options);
+            var updatedList = await ShoppingList.findOneAndUpdate(conditions, update, options).select('-creator_username');
             if(!updatedList) return res.status(400).send();
             res.send({updatedList});
         } catch(e) {
@@ -66,8 +66,8 @@ app.patch('/shoppingLists/shareList/:listId', authenticate, (req, res) => {
 
     (async function() {
         try {
-            var listExists = await User.findOne({email: req.body.sharee_email});
-            if(!listExists) return res.status(400).send();
+            var userExists = await User.findOne({email: req.body.sharee_email});
+            if(!userExists) return res.status(400).send();
 
             var conditions = {_id: listId, _creator: req.user._id, sharee_email: null, shared: false};
             var update = {$set: {sharee_email: req.body.sharee_email}};
@@ -179,7 +179,7 @@ app.patch('/shoppingLists/:listId', authenticate, (req, res) => {
 
     (async function() {
         try {
-            var updatedList = await ShoppingList.findOneAndUpdate(conditions, update, options);
+            var updatedList = await ShoppingList.findOneAndUpdate(conditions, update, options).select('-creator_username');
             if(!updatedList) return res.status(400).send();
             res.send({updatedList});
         } catch(e) {
@@ -203,7 +203,7 @@ app.patch('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
 
     (async function() {
         try {
-            var updatedList = await ShoppingList.findOneAndUpdate(conditions, update, options);
+            var updatedList = await ShoppingList.findOneAndUpdate(conditions, update, options).select('-creator_username');
             if(!updatedList) return res.status(400).send();
             res.send({updatedList});
         } catch(e) {
@@ -241,7 +241,7 @@ app.get('/shoppingLists', authenticate, (req, res) => {
 
     (async function() {
         try {
-            var myLists = await ShoppingList.find(conditions);
+            var myLists = await ShoppingList.find(conditions).select('-creator_username');
             if(!myLists) return res.status(400).send();
             res.send({myLists});
         } catch(e) {
@@ -255,7 +255,7 @@ app.get('/shoppingLists/requests', authenticate, (req, res) => {
 
     (async function() {
         try{ 
-            var unacceptedLists = await ShoppingList.find(conditions, '-list_items');
+            var unacceptedLists = await ShoppingList.find(conditions);
             if(!unacceptedLists) res.status(400).send();
             res.send({unacceptedLists});
         } catch(e) {
@@ -283,7 +283,7 @@ app.get('/shoppingLists/shared', authenticate, (req, res) => {
 
     (async function() {
         try {
-            var sharedLists = await ShoppingList.find(conditions);
+            var sharedLists = await ShoppingList.find(conditions).select('-creator_username');
             if(!sharedLists) return res.status(400).send();
             res.send({sharedLists});
         } catch(e) {
@@ -303,7 +303,7 @@ app.delete('/shoppingLists/:listId', authenticate, (req, res) => {
 
     (async function() {
         try {
-            var deletedList = await ShoppingList.findOneAndDelete(conditions);
+            var deletedList = await ShoppingList.findOneAndDelete(conditions).select('_id');
             if(!deletedList) return res.status(400).send();
             res.send({deletedList});
         } catch(e) {
@@ -326,9 +326,9 @@ app.delete('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
 
     (async function() {
         try {
-            var updatedList = await ShoppingList.findOneAndUpdate(conditions, update, options);
-            if(!updatedList) return res.status(400).send();
-            res.send({updatedList});
+            var updatedListId = await ShoppingList.findOneAndUpdate(conditions, update, options).select('_id, list_items._id');
+            if(!updatedListId) return res.status(400).send();
+            res.send({updatedListId});
         } catch(e) {
             res.status(400).send(e);
         }
