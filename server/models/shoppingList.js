@@ -32,19 +32,22 @@ var ShoppingListSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    _sharee: {
+        type: mongoose.Schema.Types.ObjectId,
+        default: null
+    },
     _creator: {
         type: mongoose.Schema.Types.ObjectId,
         required: true
     },
-    creator_username:  {
+    sharee_username:  {
         type: String,
         default: null,
         trim: true
     },
-    sharee_email: {
-        default: null,
+    creator_username:  {
         type: String,
-        minlength: 1,
+        required: true,
         trim: true
     }
 });
@@ -53,7 +56,14 @@ ShoppingListSchema.methods.toJSON = function(){
     var shoppingList = this;
     var shoppingListObject = shoppingList.toObject();
 
-    return _.pick(shoppingListObject, ['_id', 'list_name', 'list_items', 'creator_username']);
+    return _.pick(shoppingListObject, ['_id', 'list_name', 'list_items', '_sharee', 'sharee_username', '_creator', 'creator_username']);
+}
+
+ShoppingListSchema.methods.toPrivateJSON = function() {
+    var shoppingList = this;
+    var shoppingListObject = shoppingList.toObject();
+
+    return _.pick(shoppingListObject, ['_id', 'list_name', 'list_items', '_sharee', 'sharee_username']);
 }
 
 var ShoppingList = mongoose.model('ShoppingList', ShoppingListSchema);
