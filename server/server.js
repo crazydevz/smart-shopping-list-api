@@ -74,7 +74,7 @@ app.patch('/shoppingLists/shareList/:listId', authenticate, (req, res) => {
             var sharee = await User.findOne({username: req.body.username}).select('_id username');
             if(!sharee) return res.status(400).send();
 
-            var conditions = {_id: listId, _creator: req.user._id, _sharee: null, shared: false};
+            var conditions = {_id: listId, _creator: req.user._id, shared: false};
             var update = {$set: {_sharee: sharee._id, sharee_username: sharee.username}};
             var options = {new: true};
 
