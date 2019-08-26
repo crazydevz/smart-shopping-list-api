@@ -95,7 +95,7 @@ app.patch('/shoppingLists/unshareList/:listId', authenticate, (req, res) => {
     }
 
     var conditions = {_id: listId, _creator: req.user._id, _sharee: {$ne: null}, shared: true};
-    var update = {$set: {_sharee: null, shared: false}};
+    var update = {$set: {_sharee: null, sharee_username: null, shared: false}};
 
     (async function() {
         try {
@@ -116,7 +116,7 @@ app.patch('/shoppingLists/received/unshareList/:listId', authenticate, (req, res
     }
 
     var conditions = {_id: listId, _sharee: req.user._id, shared: true};
-    var update = {$set: {_sharee: null, shared: false}};
+    var update = {$set: {_sharee: null, sharee_username: null, shared: false}};
     var options = {new: true};
 
     (async function() {
@@ -161,7 +161,7 @@ app.patch('/shoppingLists/rejectList/:listId', authenticate, (req, res) => {
     }
 
     var conditions = {_id: listId, _sharee: req.user._id, shared: false};
-    var update = {$set: {_sharee: null}};
+    var update = {$set: {_sharee: null, sharee_username: null}};
     var options = {new: true};
 
     (async function() {
@@ -279,7 +279,7 @@ app.get('/shoppingLists/received', authenticate, (req, res) => {
 
     (async function() {
         try {
-            var receivedLists = await ShoppingList.find(conditions).select('-_sharee sharee_username');
+            var receivedLists = await ShoppingList.find(conditions).select('-_sharee -sharee_username');
             if(!receivedLists) return res.status(400).send();
             res.send({receivedLists});
         } catch(e) {
