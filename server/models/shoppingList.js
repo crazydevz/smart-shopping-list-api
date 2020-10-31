@@ -49,6 +49,11 @@ var ShoppingListSchema = mongoose.Schema({
         type: String,
         required: true,
         trim: true
+    },
+    createdAt: {
+        type: Number,
+        required: true,
+        trim: true
     }
 });
 
@@ -56,14 +61,14 @@ ShoppingListSchema.methods.toJSON = function(){
     var shoppingList = this;
     var shoppingListObject = shoppingList.toObject();
 
-    return _.pick(shoppingListObject, ['_id', 'list_name', 'list_items', '_sharee', 'sharee_username', '_creator', 'creator_username']);
+    return _.pick(shoppingListObject, ['_id', 'list_name', 'list_items', '_sharee', 'sharee_username', '_creator', 'creator_username', 'createdAt']);
 }
 
 ShoppingListSchema.methods.toPrivateJSON = function() {
     var shoppingList = this;
     var shoppingListObject = shoppingList.toObject();
 
-    return _.pick(shoppingListObject, ['_id', 'list_name', 'list_items', '_sharee', 'sharee_username']);
+    return _.pick(shoppingListObject, ['_id', 'list_name', 'list_items', '_sharee', 'sharee_username', 'createdAt']);
 }
 
 var ShoppingList = mongoose.model('ShoppingList', ShoppingListSchema);

@@ -1,6 +1,7 @@
 require('./configuration/config');
 require('./db/mongoose');
 
+const moment = require('moment');
 const bodyParser = require('body-parser');
 const express = require('express');
 const _ = require('lodash');
@@ -20,7 +21,8 @@ app.post('/shoppingLists', authenticate,  (req, res) => {
     var shoppingList = new ShoppingList({
         list_name: req.body.list_name,
         creator_username: req.user.username,
-        _creator: req.user._id
+        _creator: req.user._id,
+        createdAt: moment().valueOf()
     });
 
     (async function() {
@@ -407,4 +409,3 @@ app.get('/users', (req, res) => {
 app.listen(port, () => {
     console.log(`Up on port ${port}`);
 });
-
