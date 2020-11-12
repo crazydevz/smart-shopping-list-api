@@ -55,9 +55,9 @@ app.patch('/shoppingLists/shareList/:listId', authenticate, (req, res) => {
 
     (async function() {
         try {
-            if(req.user.email === req.body.sharee_email) {
-                 return res.status(400).send();
-            }
+            // if(req.user.email === req.body.sharee_email) {
+            //      return res.status(400).send();
+            // }
 
             var sharee = await User.findOne({username: req.body.username}).select('_id username');
             if(!sharee) return res.status(400).send();
