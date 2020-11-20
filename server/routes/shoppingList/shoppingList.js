@@ -263,9 +263,8 @@ app.get('/shoppingLists/requests', authenticate, (req, res) => {
     })();
 });
 
-//
 app.get('/shoppingLists/requests/outgoing', authenticate, (req, res) => {
-    var conditions = { _sharer: req.user._id, _sharee: { $ne: null } };
+    var conditions = { _creator: req.user._id, _sharee: { $ne: null }, shared: false };
 
     (async function () {
         try {
@@ -277,7 +276,6 @@ app.get('/shoppingLists/requests/outgoing', authenticate, (req, res) => {
         }
     })();
 });
-//
 
 app.get('/shoppingLists/received', authenticate, (req, res) => {
     var conditions = { _sharee: req.user._id, shared: true };
