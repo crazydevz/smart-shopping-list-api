@@ -56,7 +56,7 @@ app.patch('/shoppingLists/shareList/:listId', authenticate, (req, res) => {
 
     (async function() {
         try {
-            if(req.user.email === req.body.sharee_email) {
+            if(req.user.email === req.body.username) {
                  return res.status(400).send();
             }
 
