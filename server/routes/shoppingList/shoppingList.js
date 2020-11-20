@@ -255,7 +255,7 @@ app.get('/shoppingLists/requests', authenticate, (req, res) => {
     (async function () {
         try {
             var unacceptedLists = await ShoppingList.find(conditions).select('-_sharee -sharee_username');
-            if (!unacceptedLists) res.status(400).send();
+            if (!unacceptedLists) return res.status(400).send();
             res.send({ unacceptedLists });
         } catch (e) {
             res.status(400).send(e);
@@ -269,7 +269,7 @@ app.get('/shoppingLists/requests/outgoing', authenticate, (req, res) => {
     (async function () {
         try {
             var unacceptedLists = await ShoppingList.find(conditions).select('-creator_username -_creator');
-            if (!unacceptedLists) res.status(400).send();
+            if (!unacceptedLists) return res.status(400).send();
             res.send({ unacceptedLists });
         } catch (e) {
             res.status(400).send(e);
