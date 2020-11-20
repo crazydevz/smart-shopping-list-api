@@ -263,6 +263,22 @@ app.get('/shoppingLists/requests', authenticate, (req, res) => {
     })();
 });
 
+//
+app.get('/shoppingLists/requests/outgoing', authenticate, (req, res) => {
+    var conditions = {_sharer: req.user._id, _sharee: !null};
+
+    (async function() {
+        try{ 
+            var unacceptedLists = await ShoppingList.find(conditions).select('-creator_username -_creator');
+            if(!unacceptedLists) res.status(400).send();
+            res.send({unacceptedLists});
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+//
+
 app.get('/shoppingLists/received', authenticate, (req, res) => {
     var conditions = {_sharee: req.user._id, shared: true};
 
