@@ -187,30 +187,6 @@ app.patch('/shoppingLists/:listId', authenticate, (req, res) => {
     })();
 });
 
-// app.patch('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
-//     var listId = req.params.listId;
-//     var itemId = req.params.itemId;
-
-//     if (!ObjectID.isValid(listId) && !ObjectID.isValid(itemId)) {
-//         return res.status(404).send();
-//     }
-
-//     var conditions = { _id: listId, "list_items._id": itemId, _creator: req.user._id, shared: false };
-//     var body = _.pick(req.body, ['item_name', 'price_per_item', 'quantity_requested']);
-//     var update = { $set: { "list_items.$.item_name": body.item_name, "list_items.$.price_per_item": body.price_per_item, "list_items.$.quantity_requested": body.quantity_requested } };
-//     var options = { new: true };
-
-//     (async function () {
-//         try {
-//             var updatedList = await ShoppingList.findOneAndUpdate(conditions, update, options).select('-creator_username -_creator');
-//             if (!updatedList) return res.status(400).send();
-//             res.send({ updatedList });
-//         } catch (e) {
-//             res.status(400).send(e);
-//         }
-//     })();
-// });
-
 app.patch('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
     var listId = req.params.listId;
     var itemId = req.params.itemId;
