@@ -9,19 +9,13 @@ app.use(bodyParser.json());
 
 const port = process.env.PORT;
 
-const _ = require('lodash');
-const { ObjectID } = require('mongodb');
-const { authenticate } = require('./middleware/authenticate');
-
 module.exports = {
-    app,
-    _,
-    ObjectID,
-    authenticate
+    app
 };
 
 require('./routes/user/user-actions');
 require('./routes/shoppingList/shoppingList');
+require('./routes/delivery/delivery');
 
 app.listen(port, () => {
     console.log(`Up on port ${port}`);

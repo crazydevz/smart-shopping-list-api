@@ -1,4 +1,7 @@
-var { app, _, authenticate } = require('../../server');
+const _ = require('lodash');
+
+const { authenticate } = require('../../middleware/authenticate');
+var { app } = require('../../server');
 var { User } = require('../../models/user');
 
 app.post('/users', (req, res) => {

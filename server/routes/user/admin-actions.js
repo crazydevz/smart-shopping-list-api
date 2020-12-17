@@ -1,4 +1,4 @@
-var { app, authenticate } = require('../../server');
+const { app } = require('../../server');
 
 app.get('/users', (req, res) => {
     (async function () {
