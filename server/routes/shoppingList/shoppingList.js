@@ -1,6 +1,9 @@
+const _ = require('lodash');
+const { ObjectID } = require('mongodb');
 const moment = require('moment');
 
-var { app, _, ObjectID, authenticate } = require('../../server');
+const { app } = require('../../server');
+const { authenticate } = require('../../middleware/authenticate');
 var { ShoppingList } = require('../../models/shoppingList');
 var { User } = require('../../models/user');
 
@@ -9,7 +12,7 @@ app.post('/shoppingLists', authenticate, (req, res) => {
         list_name: req.body.list_name,
         creator_username: req.user.username,
         _creator: req.user._id,
-        createdAt: moment().valueOf()
+        created_at: moment().valueOf()
     });
 
     (async function () {
@@ -63,7 +66,7 @@ app.patch('/shoppingLists/shareList/:listId', authenticate, (req, res) => {
             var sharee = await User.findOne({ username: req.body.username }).select('_id username');
             if (!sharee) return res.status(400).send();
 
-            var conditions = { _id: listId, _creator: req.user._id, shared: false };
+            var conditions = { _id: listId, _creator: req.user._id, is_shared: false };
             var update = { $set: { _sharee: sharee._id, sharee_username: sharee.username } };
             var options = { new: true };
 
@@ -83,8 +86,8 @@ app.patch('/shoppingLists/unshareList/:listId', authenticate, (req, res) => {
         return res.status(404).send();
     }
 
-    var conditions = { _id: listId, _creator: req.user._id, _sharee: { $ne: null }, shared: true };
-    var update = { $set: { _sharee: null, sharee_username: null, shared: false } };
+    var conditions = { _id: listId, _creator: req.user._id, _sharee: { $ne: null }, is_shared: true };
+    var update = { $set: { _sharee: null, sharee_username: null, is_shared: false } };
 
     (async function () {
         try {
@@ -104,8 +107,8 @@ app.patch('/shoppingLists/received/unshareList/:listId', authenticate, (req, res
         return res.status(404).send();
     }
 
-    var conditions = { _id: listId, _sharee: req.user._id, shared: true };
-    var update = { $set: { _sharee: null, sharee_username: null, shared: false } };
+    var conditions = { _id: listId, _sharee: req.user._id, is_shared: true };
+    var update = { $set: { _sharee: null, sharee_username: null, is_shared: false } };
     var options = { new: true };
 
     (async function () {
@@ -127,8 +130,8 @@ app.patch('/shoppingLists/acceptList/:listId', authenticate, (req, res) => {
         return res.status(404).send();
     }
 
-    var conditions = { _id: listId, _sharee: req.user._id, shared: false };
-    var update = { $set: { shared: true } };
+    var conditions = { _id: listId, _sharee: req.user._id, is_shared: false };
+    var update = { $set: { is_shared: true } };
     var options = { new: true };
 
     (async function () {
@@ -149,7 +152,7 @@ app.patch('/shoppingLists/rejectList/:listId', authenticate, (req, res) => {
         return res.status(404).send();
     }
 
-    var conditions = { _id: listId, _sharee: req.user._id, shared: false };
+    var conditions = { _id: listId, _sharee: req.user._id, is_shared: false };
     var update = { $set: { _sharee: null, sharee_username: null } };
     var options = { new: true };
 
@@ -171,7 +174,7 @@ app.patch('/shoppingLists/:listId', authenticate, (req, res) => {
         return res.status(404).send();
     }
 
-    var conditions = { _id: listId, _creator: req.user._id, shared: false };
+    var conditions = { _id: listId, _creator: req.user._id, is_shared: false };
     var body = { list_name: req.body.list_name };
     var update = { $set: body };
     var options = { new: true };
@@ -195,7 +198,7 @@ app.patch('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
         return res.status(404).send();
     }
 
-    var conditions = { _id: listId, "list_items._id": itemId, _creator: req.user._id, shared: false };
+    var conditions = { _id: listId, "list_items._id": itemId, _creator: req.user._id, is_shared: false };
     var body = _.pick(req.body, ['item_name', 'price_per_item', 'quantity_requested', 'quantity_available']);
     var update = { $set: { "list_items.$.item_name": body.item_name, "list_items.$.price_per_item": body.price_per_item, "list_items.$.quantity_requested": body.quantity_requested, "list_items.$.quantity_available": body.quantity_available } };
     var options = { new: true };
@@ -219,7 +222,7 @@ app.patch('/shoppingLists/received/:listId/:itemId', authenticate, (req, res) =>
         return res.status(404).send();
     }
 
-    var conditions = { _id: listId, "list_items._id": itemId, _sharee: req.user._id, shared: true };
+    var conditions = { _id: listId, "list_items._id": itemId, _sharee: req.user._id, is_shared: true };
     var body = _.pick(req.body, ['price_per_item', 'quantity_available']);
     var update = { $set: { "list_items.$.price_per_item": body.price_per_item, "list_items.$.quantity_available": body.quantity_available } };
     var options = { new: true };
@@ -235,8 +238,9 @@ app.patch('/shoppingLists/received/:listId/:itemId', authenticate, (req, res) =>
     })();
 });
 
+// NOT TESTED
 app.get('/shoppingLists', authenticate, (req, res) => {
-    var conditions = { _creator: req.user._id };
+    var conditions = { _creator: req.user._id, is_shared: false, _sharee: null };
 
     (async function () {
         try {
@@ -250,7 +254,7 @@ app.get('/shoppingLists', authenticate, (req, res) => {
 });
 
 app.get('/shoppingLists/requests', authenticate, (req, res) => {
-    var conditions = { _sharee: req.user._id, shared: false };
+    var conditions = { _sharee: req.user._id, is_shared: false };
 
     (async function () {
         try {
@@ -264,7 +268,7 @@ app.get('/shoppingLists/requests', authenticate, (req, res) => {
 });
 
 app.get('/shoppingLists/requests/outgoing', authenticate, (req, res) => {
-    var conditions = { _creator: req.user._id, _sharee: { $ne: null }, shared: false };
+    var conditions = { _creator: req.user._id, _sharee: { $ne: null }, is_shared: false };
 
     (async function () {
         try {
@@ -277,8 +281,30 @@ app.get('/shoppingLists/requests/outgoing', authenticate, (req, res) => {
     })();
 });
 
+// NOT TESTED
+app.patch('/shoppingLists/requests/outgoing/cancelRequest/:listId', authenticate, (req, res) => {
+    var listId = req.params.listId;
+
+    if (!ObjectID.isValid(listId)) {
+        return res.status(404).send();
+    }
+
+    var conditions = { _id: listId, _creator: req.user._id, _sharee: { $ne: null }, is_shared: false };
+    var update = { $set: { _sharee: null, sharee_username: null, is_shared: false } };
+
+    (async function () {
+        try {
+            var unsharedList = await ShoppingList.findOneAndUpdate(conditions, update).select('-_creator -creator_username');
+            if (!unsharedList) return res.status(400).send();
+            res.send({ unsharedList });
+        } catch (e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
 app.get('/shoppingLists/received', authenticate, (req, res) => {
-    var conditions = { _sharee: req.user._id, shared: true };
+    var conditions = { _sharee: req.user._id, is_shared: true };
 
     (async function () {
         try {
@@ -292,7 +318,7 @@ app.get('/shoppingLists/received', authenticate, (req, res) => {
 });
 
 app.get('/shoppingLists/shared', authenticate, (req, res) => {
-    var conditions = { _creator: req.user._id, _sharee: { $ne: null }, shared: true };
+    var conditions = { _creator: req.user._id, _sharee: { $ne: null }, is_shared: true };
 
     (async function () {
         try {
@@ -312,7 +338,7 @@ app.delete('/shoppingLists/:listId', authenticate, (req, res) => {
         return res.status(404).send();
     }
 
-    var conditions = { _id: listId, _creator: req.user._id, shared: false };
+    var conditions = { _id: listId, _creator: req.user._id, is_shared: false };
 
     (async function () {
         try {
@@ -333,7 +359,7 @@ app.delete('/shoppingLists/:listId/:itemId', authenticate, (req, res) => {
         return res.status(404).send();
     }
 
-    var conditions = { _id: listId, "list_items._id": itemId, _creator: req.user._id, shared: false };
+    var conditions = { _id: listId, "list_items._id": itemId, _creator: req.user._id, is_shared: false };
     var update = { $pull: { list_items: { _id: itemId } } };
     var options = { new: true };
 
