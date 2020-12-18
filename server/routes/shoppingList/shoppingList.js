@@ -238,7 +238,6 @@ app.patch('/shoppingLists/received/:listId/:itemId', authenticate, (req, res) =>
     })();
 });
 
-// NOT TESTED
 app.get('/shoppingLists', authenticate, (req, res) => {
     var conditions = { _creator: req.user._id, is_shared: false, _sharee: null };
 
@@ -281,7 +280,6 @@ app.get('/shoppingLists/requests/outgoing', authenticate, (req, res) => {
     })();
 });
 
-// NOT TESTED
 app.patch('/shoppingLists/requests/outgoing/cancelRequest/:listId', authenticate, (req, res) => {
     var listId = req.params.listId;
 

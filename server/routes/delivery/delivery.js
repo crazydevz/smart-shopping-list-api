@@ -24,7 +24,7 @@ app.post('/deliveries', authenticate, (req, res) => {
             let shareeInfo = await User.findOne({ _id: req.body._sharee }).select('username');
             if (!shareeInfo) return res.status(400).send();
 
-            let shoppingList = await ShoppingList.findOne({
+            let shoppingList = await ShoppingList.findOneAndUpdate({
                 _id: listId, _creator: req.user._id
             },
             {
@@ -136,7 +136,7 @@ app.delete('/deliveries/requests/reject/:deliveryId', authenticate, (req, res) =
 });
 
 // Cancel current delivery (Sharer's action)
-app.delete('/deliveries/fromSharee/cancel/:deliveryId', authenticate, (req, res) => {
+app.delete('/deliveries/bySharee/cancel/:deliveryId', authenticate, (req, res) => {
     const deliveryId = req.params.deliveryId;
 
     if (!ObjectID.isValid(deliveryId)) {
@@ -184,16 +184,42 @@ app.patch('/deliveries/indicateCompletion/:deliveryId/:listId', (req, res) => {
 
     (async () => {
         try {
-            const shoppingList = await ShoppingList.findOneAndUpdate({ _list: listId }).select('-_sharee -sharee_username');
+            const shoppingList = await ShoppingList.findOne({ _list: listId }).select('-_sharee -sharee_username');
             if (!shoppingList) return res.status(400).send();
 
             const conditions = { _id: deliveryId, _list: listId, _sharee: req.user._id, status: 'in progress' };
-            const update = { $set: { list_items:shoppingList.list_items, status: 'delivered' } };
+            const update = { $set: { list_items: shoppingList.list_items, status: 'delivered' } };
             const updatedDelivery = await Delivery.findOneAndUpdate(conditions, update).select('-_sharee -sharee_username');
 
             res.send({ updatedDelivery });
         } catch (e) {
-            res.status(400).send(e)
+            res.status(400).send(e);
+        }
+    })();
+});
+
+app.get('/deliveries/requests/:deliveryId/:listId', (req, res) => {
+    const deliveryId = req.params.deliveryId;
+    const listId = req.params.listId;
+
+    if (!ObjectID.isValid(deliveryId) && !ObjectID.isValid(listId)) {
+        return res.status(404).send();
+    }
+
+    (async () => {
+        try {
+            const shoppingList = await ShoppingList.findOne({ _list: listId }).select('list_items');
+            if (!shoppingList) return res.status(400).send();
+
+            const listItems = shoppingList.list_items;
+
+            const conditions = { _id: deliveryId, _list: listId, _sharee: req.user._id, status: 'requested' };
+            const deliveryFound = await Delivery.findOne(conditions).select('-_sharee -sharee_username');
+            if(!deliveryFound) return res.status(400).send();
+
+            res.send({ listItems });
+        } catch (e) {
+            res.status(400).send(e);
         }
     })();
 });
