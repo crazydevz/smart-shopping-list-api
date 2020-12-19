@@ -25,13 +25,18 @@ app.post('/deliveries', authenticate, (req, res) => {
             if (!shareeInfo) return res.status(400).send();
 
             let shoppingList = await ShoppingList.findOneAndUpdate({
-                _id: listId, _creator: req.user._id
+                _id: listId,
+                _creator: req.user._id,
+                _sharee: null,
+                is_shared: false,
+                is_requested_for_delivery: false,
+                is_shared_for_delivery: false
             },
             {
                 $set: {
                     _sharee: req.body._sharee,
                     sharee_username: shareeInfo.username,
-                    is_shared_for_delivery: true
+                    is_requested_for_delivery: true
                 }
             }).select('list_name creator_username');
             if (!shoppingList) return res.status(400).send();
@@ -73,6 +78,13 @@ app.delete('/deliveries/:deliveryId', authenticate, (req, res) => {
             const deletedDelivery = await Delivery.findOneAndDelete({ _id: deliveryId, _sharer: req.user._id, _sharee: { $ne: null }, status: 'requested' });
             if (!deletedDelivery) return res.status(400).send();
 
+            const conditions = { _id: deletedDelivery._list, _creator: req.user._id, _sharee: { $ne: null }, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
+            const update = { $set: { _sharee: null, sharee_username: null, is_requested_for_delivery: false } };
+            const options = { new: true }
+
+            const listRequestedForDelivery = await ShoppingList.findOneAndUpdate(conditions, update, options);
+            if (!listRequestedForDelivery) return res.status(400).send();
+
             res.send({ deletedDelivery });
         } catch (e) {
             res.status(400).send(e);
@@ -81,14 +93,28 @@ app.delete('/deliveries/:deliveryId', authenticate, (req, res) => {
 });
 
 // Get delivery requests
+// app.get('/deliveries/requests', authenticate, (req, res) => {
+//     const userId = req.user._id;
+
+//     (async () => {
+//         try {
+//             const deliveryRequests = await Delivery.find({ _sharee: userId }).select('-_sharee -sharee_username');
+//             if (!deliveryRequests) return res.status(400).send();
+
+//             res.send({ deliveryRequests });
+//         } catch (e) {
+//             res.status(400).send(e);
+//         }
+//     })();
+// });
+
 app.get('/deliveries/requests', authenticate, (req, res) => {
-    const userId = req.user._id;
+    var conditions = { _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
 
-    (async () => {
+    (async function () {
         try {
-            const deliveryRequests = await Delivery.find({ _sharee: userId }).select('-_sharee -sharee_username');
+            var deliveryRequests = await ShoppingList.find(conditions).select('-_sharee -sharee_username');
             if (!deliveryRequests) return res.status(400).send();
-
             res.send({ deliveryRequests });
         } catch (e) {
             res.status(400).send(e);
@@ -105,10 +131,21 @@ app.patch('/deliveries/requests/accept/:deliveryId', authenticate, (req, res) =>
     }
 
     (async () => {
-        const conditions = { _id: deliveryId, _sharee: req.user._id, status: 'requested' };
-        const update = { $set: { status: 'in progress' } }
         try {
-            const updatedDelivery = await Delivery.findOneAndUpdate(conditions, update).select('-_sharee -sharee_username');
+            const conditions = { _id: deliveryId, _sharee: req.user._id, status: 'requested' };
+            const update = { $set: { status: 'in progress' } }
+            const options = { new: true };
+
+            const updatedDelivery = await Delivery.findOneAndUpdate(conditions, update, options).select('-_sharee -sharee_username');
+            if (!updatedDelivery) return res.status(400).send();
+            
+            const conditions = { _id: updatedDelivery._list, _creator: req.user._id, _sharee: { $ne: null }, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
+            const update = { $set: { _sharee: null, sharee_username: null, is_shared_for_delivery: true } };
+            const options = { new: true }
+            
+            const listRequestedForDelivery = ShoppingList.findOneAndUpdate(conditions, update, options);
+            if (!listRequestedForDelivery) return res.status(400).send();
+
             res.send({ updatedDelivery });
         } catch (e) {
             res.status(400).send(e);
@@ -125,9 +162,17 @@ app.delete('/deliveries/requests/reject/:deliveryId', authenticate, (req, res) =
     }
 
     (async () => {
-        const conditions = { _id: deliveryId, _sharee: req.user._id, status: 'requested' };
         try {
+            const conditions = { _id: deliveryId, _sharee: req.user._id, status: 'requested' };
             const deletedDelivery = await Delivery.findOneAndDelete(conditions).select('-_sharee -sharee_username');
+            
+            const conditions = { _id: deletedDelivery._list, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
+            const update = { $set: { _sharee: null, sharee_username: null, is_requested_for_delivery: false } };
+            const options = { new: true }
+            
+            const listRequestedForDelivery = ShoppingList.findOneAndUpdate(conditions, update, options);
+            if (!listRequestedForDelivery) return res.status(400).send();
+            
             res.send({ deletedDelivery });
         } catch (e) {
             res.status(400).send(e);
@@ -144,9 +189,17 @@ app.delete('/deliveries/bySharee/cancel/:deliveryId', authenticate, (req, res) =
     }
 
     (async () => {
-        const conditions = { _id: deliveryId, _sharer: req.user._id, status: 'in progress' };
         try {
+            const conditions = { _id: deliveryId, _sharer: req.user._id, status: 'in progress' };
             const deletedDelivery = await Delivery.findOneAndDelete(conditions).select('-_sharer -sharer_username');
+            
+            const conditions = { _id: deletedDelivery._list, _creator: req.user._id, _sharee: { $ne: null }, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true };
+            const update = { $set: { _sharee: null, sharee_username: null, is_requested_for_delivery: false, is_shared_for_delivery: false } };
+            const options = { new: true }
+
+            const listRequestedForDelivery = await ShoppingList.findOneAndUpdate(conditions, update, options);
+            if (!listRequestedForDelivery) return res.status(400).send();
+            
             res.send({ deletedDelivery });
         } catch (e) {
             res.status(400).send(e);
@@ -163,9 +216,17 @@ app.delete('/deliveries/toSharer/cancel/:deliveryId', authenticate, (req, res) =
     }
 
     (async () => {
-        const conditions = { _id: deliveryId, _sharee: req.user._id, status: 'in progress' };
         try {
+            const conditions = { _id: deliveryId, _sharee: req.user._id, status: 'in progress' };
             const deletedDelivery = await Delivery.findOneAndDelete(conditions).select('-_sharee -sharee_username');
+
+            const conditions = { _id: deletedDelivery._list, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true };
+            const update = { $set: { _sharee: null, sharee_username: null, is_requested_for_delivery: false, is_shared_for_delivery: false } };
+            const options = { new: true }
+
+            const listRequestedForDelivery = await ShoppingList.findOneAndUpdate(conditions, update, options);
+            if (!listRequestedForDelivery) return res.status(400).send();
+
             res.send({ deletedDelivery });
         } catch (e) {
             res.status(400).send(e);
@@ -184,12 +245,17 @@ app.patch('/deliveries/indicateCompletion/:deliveryId/:listId', (req, res) => {
 
     (async () => {
         try {
-            const shoppingList = await ShoppingList.findOne({ _list: listId }).select('-_sharee -sharee_username');
+            const shoppingList = await ShoppingList.findOneAndUpdate(
+                { _list: listId, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true },
+                { $set: { _sharee: null, sharee_username: null, is_requested_for_delivery: false, is_shared_for_delivery: false } }
+            ).select('-_sharee -sharee_username');
             if (!shoppingList) return res.status(400).send();
 
             const conditions = { _id: deliveryId, _list: listId, _sharee: req.user._id, status: 'in progress' };
             const update = { $set: { list_items: shoppingList.list_items, status: 'delivered' } };
-            const updatedDelivery = await Delivery.findOneAndUpdate(conditions, update).select('-_sharee -sharee_username');
+            var options = { new: true };
+
+            const updatedDelivery = await Delivery.findOneAndUpdate(conditions, update, options).select('-_sharee -sharee_username');
 
             res.send({ updatedDelivery });
         } catch (e) {
@@ -208,14 +274,14 @@ app.get('/deliveries/requests/:deliveryId/:listId', (req, res) => {
 
     (async () => {
         try {
-            const shoppingList = await ShoppingList.findOne({ _list: listId }).select('list_items');
+            const shoppingList = await ShoppingList.findOne({ _list: listId, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true }).select('list_items');
             if (!shoppingList) return res.status(400).send();
 
             const listItems = shoppingList.list_items;
 
             const conditions = { _id: deliveryId, _list: listId, _sharee: req.user._id, status: 'requested' };
             const deliveryFound = await Delivery.findOne(conditions).select('-_sharee -sharee_username');
-            if(!deliveryFound) return res.status(400).send();
+            if (!deliveryFound) return res.status(400).send();
 
             res.send({ listItems });
         } catch (e) {
