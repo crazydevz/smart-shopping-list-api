@@ -70,9 +70,17 @@ app.get('/deliveries/requests', authenticate, (req, res) => {
 
     (async function () {
         try {
-            var deliveryRequests = await ShoppingList.find(conditions).select('-_sharee -sharee_username');
+            let deliveryRequests = await Delivery.find({ _sharee: req.user._id }).select('_id');
             if (!deliveryRequests) return res.status(400).send();
-            res.send({ deliveryRequests });
+
+            deliveryId = deliveryRequests._id;
+
+            deliveryRequests = await ShoppingList.find(conditions).select('-_sharee -sharee_username');
+            if (!deliveryRequests) return res.status(400).send();
+            res.send({
+                ...deliveryRequests,
+                deliveryId
+            });
         } catch (e) {
             res.status(400).send(e);
         }
