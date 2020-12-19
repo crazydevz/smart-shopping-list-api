@@ -225,7 +225,7 @@ app.delete('/deliveries/toSharer/cancel/:deliveryId', authenticate, (req, res) =
 app.patch('/deliveries/indicateCompletion/:listId', (req, res) => {
     const listId = req.params.listId;
 
-    if (!ObjectID.isValid(deliveryId) && !ObjectID.isValid(listId)) {
+    if (!ObjectID.isValid(listId)) {
         return res.status(404).send();
     }
 
