@@ -231,17 +231,17 @@ app.patch('/deliveries/indicateCompletion/:listId', (req, res) => {
 
     (async () => {
         try {
-            const conditions = { _list: listId, _sharee: req.user._id, status: 'in progress' };
-            const update = { $set: { list_items: shoppingList.list_items, status: 'delivered' } };
-            var options = { new: true };
-
-            const updatedDelivery = await Delivery.findOneAndUpdate(conditions, update, options).select('-_sharee -sharee_username');
-
-            const shoppingList = await ShoppingList.findOneAndUpdate(
-                { _id: updatedDelivery._list, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true },
+            const updatedList = await ShoppingList.findOneAndUpdate(
+                { _id: listId, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true },
                 { $set: { _sharee: null, sharee_username: null, is_requested_for_delivery: false, is_shared_for_delivery: false } }
             ).select('-_sharee -sharee_username');
-            if (!shoppingList) return res.status(400).send();
+            if (!updatedList) return res.status(400).send();
+
+            const conditions = { _list: updatedList._id, _sharee: req.user._id, status: 'in progress' };
+            const update = { $set: { list_items: updatedList.list_items, status: 'delivered' } };
+            const options = { new: true };
+
+            const updatedDelivery = await Delivery.findOneAndUpdate(conditions, update, options).select('-_sharee -sharee_username');
 
             res.send({ updatedDelivery });
         } catch (e) {
