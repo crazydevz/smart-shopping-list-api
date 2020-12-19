@@ -95,7 +95,7 @@ app.patch('/deliveries/requests/accept/:listId', authenticate, (req, res) => {
             let update = { $set: { status: 'in progress' } }
             let options = { new: true };
 
-            const updatedDelivery = await Delivery.findOneAndUpdate(conditions, update, options).select('-_sharee -_sharee_username');
+            const updatedDelivery = await Delivery.findOneAndUpdate(conditions, update, options).select('-_sharee -sharee_username');
             if (!updatedDelivery) return res.status(400).send();
             
             conditions = { _id: updatedDelivery._list, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
@@ -105,7 +105,7 @@ app.patch('/deliveries/requests/accept/:listId', authenticate, (req, res) => {
             const listRequestedForDelivery = ShoppingList.findOneAndUpdate(conditions, update, options);
             if (!listRequestedForDelivery) return res.status(400).send();
 
-            res.send({ updatedDelivery });
+            res.send({ listRequestedForDelivery });
         } catch (e) {
             res.status(400).send(e);
         }
