@@ -78,10 +78,10 @@ app.get('/deliveries/requests', authenticate, (req, res) => {
             deliveryRequests = await ShoppingList.find(conditions).select('-_sharee -sharee_username');
             if (!deliveryRequests) return res.status(400).send();
 
-            deliveryRequests = {
-                ...deliveryRequests,
-                deliveryId
-            }
+            // deliveryRequests = {
+            //     ...deliveryRequests,
+            //     deliveryId
+            // }
 
             res.send({
                 deliveryRequests
