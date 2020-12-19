@@ -18,8 +18,8 @@ app.post('/deliveries', authenticate, (req, res) => {
     (async function () {
         try {
             // Check if user has another delivery requested already
-            // let deliveryRequested = await Delivery.findOne({ _sharer: req.user._id });
-            // if (deliveryRequested) return res.status(400).send();
+            let deliveryRequested = await Delivery.findOne({ _sharer: req.user._id });
+            if (deliveryRequested) return res.status(400).send();
 
             let shareeInfo = await User.findOne({ _id: req.body._sharee }).select('username');
             if (!shareeInfo) return res.status(400).send();
