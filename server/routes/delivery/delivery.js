@@ -98,11 +98,11 @@ app.patch('/deliveries/requests/accept/:listId', authenticate, (req, res) => {
             const updatedDelivery = await Delivery.findOneAndUpdate(conditions, update, options).select('-_sharee -sharee_username');
             if (!updatedDelivery) return res.status(400).send();
             
-            conditions = { _id: updatedDelivery._list, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
-            update = { $set: { is_shared_for_delivery: true } };
-            options = { new: true }
+            let conditionsP = { _id: updatedDelivery._list, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
+            let updateP = { $set: { is_shared_for_delivery: true } };
+            let optionsP = { new: true }
             
-            const listRequestedForDelivery = ShoppingList.findOneAndUpdate(conditions, update, options);
+            const listRequestedForDelivery = ShoppingList.findOneAndUpdate(conditionsP, updateP, optionsP);
             if (!listRequestedForDelivery) return res.status(400).send();
 
             res.send({ listRequestedForDelivery });
