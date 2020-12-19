@@ -222,7 +222,7 @@ app.delete('/deliveries/toSharer/cancel/:deliveryId', authenticate, (req, res) =
 });
 
 // Indicate delivery completion
-app.patch('/deliveries/indicateCompletion/:listId', (req, res) => {
+app.patch('/deliveries/indicateCompletion/:listId', authenticate, (req, res) => {
     const listId = req.params.listId;
 
     if (!ObjectID.isValid(listId)) {
