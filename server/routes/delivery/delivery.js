@@ -65,6 +65,22 @@ app.post('/deliveries', authenticate, (req, res) => {
     })();
 });
 
+app.get('/deliveries/requests', authenticate, (req, res) => {
+    var conditions = { _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
+
+    (async function () {
+        try {
+            var deliveryRequests = await ShoppingList.find(conditions).select('-_sharee -sharee_username');
+            if (!deliveryRequests) return res.status(400).send();
+            res.send({ deliveryRequests });
+        } catch (e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
+// ------------------------------------------------------------------------ //
+
 // Cancel delivery request
 app.delete('/deliveries/:deliveryId', authenticate, (req, res) => {
     const deliveryId = req.params.deliveryId;
@@ -107,20 +123,6 @@ app.delete('/deliveries/:deliveryId', authenticate, (req, res) => {
 //         }
 //     })();
 // });
-
-app.get('/deliveries/requests', authenticate, (req, res) => {
-    var conditions = { _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
-
-    (async function () {
-        try {
-            var deliveryRequests = await ShoppingList.find(conditions).select('-_sharee -sharee_username');
-            if (!deliveryRequests) return res.status(400).send();
-            res.send({ deliveryRequests });
-        } catch (e) {
-            res.status(400).send(e);
-        }
-    })();
-});
 
 // Accept delivery request
 app.patch('/deliveries/requests/accept/:deliveryId', authenticate, (req, res) => {
