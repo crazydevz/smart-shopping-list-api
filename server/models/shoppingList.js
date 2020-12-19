@@ -32,6 +32,10 @@ var ShoppingListSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
+    is_requested_for_delivery: {
+        type: Boolean,
+        default: false
+    },
     is_shared_for_delivery: {
         type: Boolean,
         default: false
