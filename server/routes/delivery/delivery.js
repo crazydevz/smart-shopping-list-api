@@ -121,7 +121,7 @@ app.delete('/deliveries/requests/reject/:listId', authenticate, (req, res) => {
 
     (async () => {
         try {
-            let conditions = { _id: listId, _sharee: req.user._id, status: 'requested' };
+            let conditions = { _list: listId, _sharee: req.user._id, status: 'requested' };
             const deletedDelivery = await Delivery.findOneAndDelete(conditions).select('-_sharee -sharee_username');
             
             conditions = { _id: deletedDelivery._list, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
