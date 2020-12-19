@@ -132,16 +132,16 @@ app.patch('/deliveries/requests/accept/:deliveryId', authenticate, (req, res) =>
 
     (async () => {
         try {
-            const conditions = { _id: deliveryId, _sharee: req.user._id, status: 'requested' };
-            const update = { $set: { status: 'in progress' } }
-            const options = { new: true };
+            let conditions = { _id: deliveryId, _sharee: req.user._id, status: 'requested' };
+            let update = { $set: { status: 'in progress' } }
+            let options = { new: true };
 
             const updatedDelivery = await Delivery.findOneAndUpdate(conditions, update, options).select('-_sharee -sharee_username');
             if (!updatedDelivery) return res.status(400).send();
             
-            const conditions = { _id: updatedDelivery._list, _creator: req.user._id, _sharee: { $ne: null }, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
-            const update = { $set: { _sharee: null, sharee_username: null, is_shared_for_delivery: true } };
-            const options = { new: true }
+            conditions = { _id: updatedDelivery._list, _creator: req.user._id, _sharee: { $ne: null }, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
+            update = { $set: { _sharee: null, sharee_username: null, is_shared_for_delivery: true } };
+            options = { new: true }
             
             const listRequestedForDelivery = ShoppingList.findOneAndUpdate(conditions, update, options);
             if (!listRequestedForDelivery) return res.status(400).send();
@@ -163,10 +163,10 @@ app.delete('/deliveries/requests/reject/:deliveryId', authenticate, (req, res) =
 
     (async () => {
         try {
-            const conditions = { _id: deliveryId, _sharee: req.user._id, status: 'requested' };
+            let conditions = { _id: deliveryId, _sharee: req.user._id, status: 'requested' };
             const deletedDelivery = await Delivery.findOneAndDelete(conditions).select('-_sharee -sharee_username');
             
-            const conditions = { _id: deletedDelivery._list, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
+            conditions = { _id: deletedDelivery._list, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
             const update = { $set: { _sharee: null, sharee_username: null, is_requested_for_delivery: false } };
             const options = { new: true }
             
@@ -190,10 +190,10 @@ app.delete('/deliveries/bySharee/cancel/:deliveryId', authenticate, (req, res) =
 
     (async () => {
         try {
-            const conditions = { _id: deliveryId, _sharer: req.user._id, status: 'in progress' };
-            const deletedDelivery = await Delivery.findOneAndDelete(conditions).select('-_sharer -sharer_username');
+            let conditions = { _id: deliveryId, _sharer: req.user._id, status: 'in progress' };
+            let deletedDelivery = await Delivery.findOneAndDelete(conditions).select('-_sharer -sharer_username');
             
-            const conditions = { _id: deletedDelivery._list, _creator: req.user._id, _sharee: { $ne: null }, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true };
+            conditions = { _id: deletedDelivery._list, _creator: req.user._id, _sharee: { $ne: null }, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true };
             const update = { $set: { _sharee: null, sharee_username: null, is_requested_for_delivery: false, is_shared_for_delivery: false } };
             const options = { new: true }
 
@@ -217,10 +217,10 @@ app.delete('/deliveries/toSharer/cancel/:deliveryId', authenticate, (req, res) =
 
     (async () => {
         try {
-            const conditions = { _id: deliveryId, _sharee: req.user._id, status: 'in progress' };
+            let conditions = { _id: deliveryId, _sharee: req.user._id, status: 'in progress' };
             const deletedDelivery = await Delivery.findOneAndDelete(conditions).select('-_sharee -sharee_username');
 
-            const conditions = { _id: deletedDelivery._list, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true };
+            conditions = { _id: deletedDelivery._list, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true };
             const update = { $set: { _sharee: null, sharee_username: null, is_requested_for_delivery: false, is_shared_for_delivery: false } };
             const options = { new: true }
 
