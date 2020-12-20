@@ -92,7 +92,7 @@ app.patch('/deliveries/requests/accept/:listId', authenticate, (req, res) => {
     (async () => {
         try {
             let conditions = { _list: listId, _sharee: req.user._id, status: 'requested' };
-            let update = { $set: { status: 'in progress' } }
+            let update = { $set: { status: 'in progress', source_latitude: req.body.src_lat, source_longitude: req.body.src_long } }
             let options = { new: true };
 
             const updatedDelivery = await Delivery.findOneAndUpdate(conditions, update, options).select('-_sharee -sharee_username');
