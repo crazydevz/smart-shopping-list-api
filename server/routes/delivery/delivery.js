@@ -221,6 +221,23 @@ app.delete('/deliveries/inProgress/cancel/:listId', authenticate, (req, res) => 
     })();
 });
 
+// View delivery in progress
+app.get('/deliveries/inProgress', authenticate, (req, res) => {
+    (async () => {
+        const conditions = { _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true };
+        try {
+            deliveryInProgress = await ShoppingList.findOne(conditions).select('-_sharee -sharee_username');
+            if (!deliveryInProgress) return res.status(400).send();
+
+            res.send({
+                deliveryInProgress
+            });
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
 // Indicate delivery completion (Sharee's action)
 app.patch('/deliveries/indicateCompletion/:listId', authenticate, (req, res) => {
     const listId = req.params.listId;
