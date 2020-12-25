@@ -221,7 +221,7 @@ app.delete('/deliveries/inProgress/cancel/:listId', authenticate, (req, res) => 
     })();
 });
 
-// View delivery in progress
+// View delivery in progress (Sharee's action)
 app.get('/deliveries/inProgress', authenticate, (req, res) => {
     (async () => {
         const conditions = { _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true };
@@ -231,6 +231,23 @@ app.get('/deliveries/inProgress', authenticate, (req, res) => {
 
             res.send({
                 deliveryInProgress
+            });
+        } catch(e) {
+            res.status(400).send(e);
+        }
+    })();
+});
+
+// View delivery on its way (Sharer's action)
+app.get('/deliveries/onItsWay', authenticate, (req, res) => {
+    (async () => {
+        const conditions = { _sharer: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true };
+        try {
+            deliveryOnItsWay = await ShoppingList.findOne(conditions).select('-_sharer -sharer_username');
+            if (!deliveryOnItsWay) return res.status(400).send();
+
+            res.send({
+                deliveryOnItsWay
             });
         } catch(e) {
             res.status(400).send(e);
