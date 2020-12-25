@@ -243,7 +243,7 @@ app.get('/deliveries/onItsWay', authenticate, (req, res) => {
     (async () => {
         const conditions = { _sharer: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true };
         try {
-            deliveryOnItsWay = await ShoppingList.findOne(conditions).select('-_sharer -sharer_username');
+            deliveryOnItsWay = await ShoppingList.findOne(conditions).select('-_creator -creator_username');
             if (!deliveryOnItsWay) return res.status(400).send();
 
             res.send({
