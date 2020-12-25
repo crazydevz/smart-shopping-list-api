@@ -141,43 +141,43 @@ app.delete('/deliveries/requests/reject/:listId', authenticate, (req, res) => {
 // ------------------------------------------------------------------------ //
 
 // Cancel delivery request
-app.delete('/deliveries/:deliveryId', authenticate, (req, res) => {
-    const deliveryId = req.params.deliveryId;
+// app.delete('/deliveries/:deliveryId', authenticate, (req, res) => {
+//     const deliveryId = req.params.deliveryId;
 
-    if (!ObjectID.isValid(deliveryId)) {
-        return res.status(404).send();
-    }
+//     if (!ObjectID.isValid(deliveryId)) {
+//         return res.status(404).send();
+//     }
 
-    (async () => {
-        try {
-            const deletedDelivery = await Delivery.findOneAndDelete({ _id: deliveryId, _sharer: req.user._id, _sharee: { $ne: null }, status: 'requested' });
-            if (!deletedDelivery) return res.status(400).send();
+//     (async () => {
+//         try {
+//             const deletedDelivery = await Delivery.findOneAndDelete({ _id: deliveryId, _sharer: req.user._id, _sharee: { $ne: null }, status: 'requested' });
+//             if (!deletedDelivery) return res.status(400).send();
 
-            const conditions = { _id: deletedDelivery._list, _creator: req.user._id, _sharee: { $ne: null }, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
-            const update = { $set: { _sharee: null, sharee_username: null, is_requested_for_delivery: false } };
-            const options = { new: true }
+//             const conditions = { _id: deletedDelivery._list, _creator: req.user._id, _sharee: { $ne: null }, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: false };
+//             const update = { $set: { _sharee: null, sharee_username: null, is_requested_for_delivery: false } };
+//             const options = { new: true }
 
-            const listRequestedForDelivery = await ShoppingList.findOneAndUpdate(conditions, update, options);
-            if (!listRequestedForDelivery) return res.status(400).send();
+//             const listRequestedForDelivery = await ShoppingList.findOneAndUpdate(conditions, update, options);
+//             if (!listRequestedForDelivery) return res.status(400).send();
 
-            res.send({ deletedDelivery });
-        } catch (e) {
-            res.status(400).send(e);
-        }
-    })();
-});
+//             res.send({ deletedDelivery });
+//         } catch (e) {
+//             res.status(400).send(e);
+//         }
+//     })();
+// });
 
 // Cancel current delivery (Sharer's action)
-app.delete('/deliveries/bySharee/cancel/:deliveryId', authenticate, (req, res) => {
-    const deliveryId = req.params.deliveryId;
+app.delete('/deliveries/onItsWay/cancel/:listId', authenticate, (req, res) => {
+    const listId = req.params.listId;
 
-    if (!ObjectID.isValid(deliveryId)) {
+    if (!ObjectID.isValid(listId)) {
         return res.status(404).send();
     }
 
     (async () => {
         try {
-            let conditions = { _id: deliveryId, _sharer: req.user._id, status: 'in progress' };
+            let conditions = { _list: listId, _sharer: req.user._id, status: 'in progress' };
             let deletedDelivery = await Delivery.findOneAndDelete(conditions).select('-_sharer -sharer_username');
             
             conditions = { _id: deletedDelivery._list, _creator: req.user._id, _sharee: { $ne: null }, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true };
@@ -195,16 +195,16 @@ app.delete('/deliveries/bySharee/cancel/:deliveryId', authenticate, (req, res) =
 });
 
 // Cancel current delivery (Sharee's action)
-app.delete('/deliveries/toSharer/cancel/:deliveryId', authenticate, (req, res) => {
-    const deliveryId = req.params.deliveryId;
+app.delete('/deliveries/inProgress/cancel/:listId', authenticate, (req, res) => {
+    const listId = req.params.listId;
 
-    if (!ObjectID.isValid(deliveryId)) {
+    if (!ObjectID.isValid(listId)) {
         return res.status(404).send();
     }
 
     (async () => {
         try {
-            let conditions = { _id: deliveryId, _sharee: req.user._id, status: 'in progress' };
+            let conditions = { _list: listId, _sharee: req.user._id, status: 'in progress' };
             const deletedDelivery = await Delivery.findOneAndDelete(conditions).select('-_sharee -sharee_username');
 
             conditions = { _id: deletedDelivery._list, _sharee: req.user._id, is_shared: false, is_requested_for_delivery: true, is_shared_for_delivery: true };
@@ -221,7 +221,7 @@ app.delete('/deliveries/toSharer/cancel/:deliveryId', authenticate, (req, res) =
     })();
 });
 
-// Indicate delivery completion
+// Indicate delivery completion (Sharee's action)
 app.patch('/deliveries/indicateCompletion/:listId', authenticate, (req, res) => {
     const listId = req.params.listId;
 
