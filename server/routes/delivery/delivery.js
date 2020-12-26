@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const { ObjectID } = require('mongodb');
+const moment = require('moment');
 
 const { authenticate } = require('../../middleware/authenticate');
 const { app } = require('../../server');
@@ -272,7 +273,7 @@ app.patch('/deliveries/indicateCompletion/:listId', authenticate, (req, res) => 
             if (!updatedList) return res.status(400).send();
 
             const conditions = { _list: updatedList._id, _sharee: req.user._id, status: 'in progress' };
-            const update = { $set: { list_items: updatedList.list_items, status: 'delivered' } };
+            const update = { $set: { list_items: updatedList.list_items, status: 'delivered', finished_at: moment().valueOf() } };
             const options = { new: true };
 
             const updatedDelivery = await Delivery.findOneAndUpdate(conditions, update, options).select('-_sharee -sharee_username');
