@@ -16,6 +16,7 @@ module.exports = {
 require('./routes/user/user-actions');
 require('./routes/shoppingList/shoppingList');
 require('./routes/delivery/delivery');
+require('./routes/review/review');
 
 app.listen(port, () => {
     console.log(`Up on port ${port}`);
